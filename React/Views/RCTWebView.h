@@ -38,6 +38,10 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
 @property (nonatomic, copy) NSString *injectedJavaScript;
 @property (nonatomic, assign) BOOL scalesPageToFit;
 
+@property (nonatomic) float scrollY;
+@property (nonatomic) float scrollX;
+@property (nonatomic, copy) RCTBubblingEventBlock onWebViewScroll; //property/event callback to JS
+
 - (void)goForward;
 - (void)goBack;
 - (void)reload;

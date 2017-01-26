@@ -22,7 +22,7 @@
 NSString *const RCTJSNavigationScheme = @"react-js-navigation";
 NSString *const RCTJSPostMessageHost = @"postMessage";
 
-@interface RCTWebView () <UIWebViewDelegate, RCTAutoInsetsProtocol>
+@interface RCTWebView () <UIWebViewDelegate, RCTAutoInsetsProtocol, UIScrollViewDelegate>
 
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingStart;
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingFinish;
@@ -36,6 +36,7 @@ NSString *const RCTJSPostMessageHost = @"postMessage";
 {
   UIWebView *_webView;
   NSString *_injectedJavaScript;
+  BOOL _startUserDrag; //flag to avoid sending auto scroll back to JS and only user interaction
 }
 
 - (void)dealloc
@@ -51,7 +52,9 @@ NSString *const RCTJSPostMessageHost = @"postMessage";
     _contentInset = UIEdgeInsetsZero;
     _webView = [[UIWebView alloc] initWithFrame:self.bounds];
     _webView.delegate = self;
+    _webView.scrollView.delegate = self;
     [self addSubview:_webView];
+    _startUserDrag = NO;
   }
   return self;
 }
@@ -312,5 +315,64 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
     _onLoadingFinish([self baseEvent]);
   }
 }
+
+#pragma mark Scrolling Properties
+-(void)setScrollX:(float)scrollX
+{
+  UIScrollView* scrollView = _webView.scrollView;
+  float newX = (scrollView.contentSize.width - scrollView.frame.size.width) * scrollX;
+  float newY = scrollView.contentOffset.y;
+  CGPoint newOffset = CGPointMake(newX, newY);
+  scrollView.contentOffset = newOffset;
+}
+
+-(void)setScrollY:(float)scrollY
+{
+  UIScrollView* scrollView = _webView.scrollView;
+  float newX = scrollView.contentOffset.x;
+  float newY = (scrollView.contentSize.height - scrollView.frame.size.height) * scrollY;
+  CGPoint newOffset = CGPointMake(newX, newY);
+  scrollView.contentOffset = newOffset;
+}
+
+#pragma mark scroll view delegate
+
+-(void)scrollViewDidScroll:(UIScrollView *)scrollView
+{
+  if (_startUserDrag) {
+    float y = (float)(scrollView.contentOffset.y / (scrollView.contentSize.height - scrollView.frame.size.height));
+    float x = (float)(scrollView.contentOffset.x / (scrollView.contentSize.width - scrollView.frame.size.width));
+    if (isnan(y)) {y = 0;}
+    if (isnan(x)) {x = 0;}
+    if (isinf(x)) {x = 0;}
+    if (isinf(y)) {y = 0;}
+    
+    if (self.onWebViewScroll) {
+      self.onWebViewScroll(@{
+                      @"scrollX": @(x),
+                      @"scrollY": @(y)
+                      });
+    }
+  }
+}
+
+-(void)scrollViewWillBeginDragging:(UIScrollView *)scrollView
+{
+  _startUserDrag = YES;
+}
+
+-(void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate
+{
+  if (!decelerate)
+  {
+    _startUserDrag = NO;
+  }
+}
+
+-(void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
+{
+  _startUserDrag = NO;
+}
+
 
 @end

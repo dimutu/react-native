@@ -118,6 +118,9 @@ class WebView extends React.Component {
 
   static propTypes = {
     ...View.propTypes,
+    scrollY: PropTypes.number,
+    scrollX: PropTypes.number,
+    onWebViewScroll: PropTypes.func, //event notification
 
     html: deprecatedPropType(
       PropTypes.string,
@@ -340,6 +343,8 @@ class WebView extends React.Component {
     viewState: WebViewState.IDLE,
     lastErrorEvent: (null: ?ErrorEvent),
     startInLoadingState: true,
+    scrollX: 0,
+    scrollY: 0,
   };
 
   componentWillMount() {
@@ -416,6 +421,9 @@ class WebView extends React.Component {
         allowsInlineMediaPlayback={this.props.allowsInlineMediaPlayback}
         mediaPlaybackRequiresUserAction={this.props.mediaPlaybackRequiresUserAction}
         dataDetectorTypes={this.props.dataDetectorTypes}
+        onWebViewScroll={this.props.onWebViewScroll}
+        scrollX={this.state.scrollX}
+        scrollY={this.state.scrollY}
       />;
 
     return (
